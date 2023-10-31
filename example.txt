@@ -1,0 +1,5 @@
+G({T,F,S};{a,b};P;S)
+P:
+S-->T|T+S|T-S
+T-->F|F*T
+F-->a|b
