@@ -2,5 +2,5 @@ G({A,B,C,S};{a,b};P;S)
 P:
 S-->C
 C-->Ab|Ba
-A-->a|Ca
+A-->a|Ca|Cb
 B-->b|Cb

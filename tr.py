@@ -51,7 +51,6 @@ class translator:
             if iterations > 30:
                 break
             if output[index] in self.VT:
-                length = len(self.Rules[output[index]])
                 replacement = random.choice(self.Rules[output[index]])
                 output = output.replace(output[index], replacement, 1)
                 print(' -->', output, end='')
@@ -71,6 +70,8 @@ class translator:
         else:
             print(f"Операция свёртки: \n {word}", end="")
             try:
+                p = self.GetParentAndChidren(word)
+                print(RenderTree(p))
                 word = self.fold(self, word)
                 print(f" <-- {word}", end="")
             except:
@@ -78,6 +79,7 @@ class translator:
                 return False
             while any(elem in word for elem in self.VN):
                 for index in range(len(word)):
+                    #if self.endings.count(word[0]) > 1 or
                     try:
                         word = self.fold(self,  word)
                     except:
@@ -93,16 +95,20 @@ class translator:
 
 
 
-    def GetParentAndChidren(self, replace, word):
+    def GetParentAndChidren(self, word):
         parent_node = Node(word)
-        child_Nodes = []
-        vars = self.GetListOfKeys(replace)
-        if len(vars) > 1:
+        vars = self.GetListOfKeys(self, word)
+        if vars == []:
+            return None
+        elif len(vars) >= 1:
             for i in range(len(vars)):
                 # варианты (дети текущего узла)
-                child_Nodes.append(Node(vars[i] + word[1:]))
-            parent_node.children = child_Nodes
-        print(RenderTree(parent_node))
+                word = self.fold(self, word, vars[i])
+                word = vars[i] + word[len(vars[i]):]
+                Node(word, parent = parent_node)
+                while 'S' not in parent_node.leaves:
+                    self.GetParentAndChidren(self, word)
+      #  print(RenderTree(parent_node))
         return parent_node
 
 
@@ -116,47 +122,88 @@ class translator:
     def GetListOfKeys(self, value):
         vars = []
         for key in translator.Rules.keys():
-            if value in translator.Rules[key]:
+            if value[0] in translator.Rules[key] or value[:2] in translator.Rules[key]:
+                vars.append(key)
+            elif ' ' in translator.Rules[key]:
                 vars.append(key)
         return vars
 
-    def fold(self, word):
-        if word[:2] in self.endings:
-            word = self.GetKeyByValue(word[:2]) + word[2:]
+    def fold(self, word, replace = None):
+        if replace != None:
+            begin = translator.Rules[replace]
+            for val in begin:
+                if word.startswith(val):
+                    word = replace + word[len(val):]
+                    return word
         else:
-            word = self.GetKeyByValue(word[0]) + word[1:]
-        return word
+            if word[:2] in translator.endings:
+                word = translator.GetKeyByValue(word[:2]) + word[2:]
+            else:
+                word = translator.GetKeyByValue(word[0]) + word[1:]
+            return word
 
 
     def DrawGraph(self):
-        G = nx.DiGraph(directed = True)
-        pos = nx.spring_layout
+        G = nx.DiGraph(directed = False)
         G.add_node('H')
         G.add_nodes_from(self.VT)
         print(self.Rules)
-        edges = []
+        loc = nx.spring_layout(G)
         labels_edges = {}
 
         for term in self.Rules.keys():
             for value in self.Rules[term]:
-                edges.append([value, term])
                 if len(value) == 1:
                     #если конечный символ (a,b)
-                    if value in self.VN:
-                        edge = ('H', term)
-                        labels_edges[edge] = value
-                        G.add_edge('H', term)
+                   if value in self.VN:
+                       edge = ('H', term)
+                       if labels_edges.get(edge) != None:
+                          labels_edges[edge] = labels_edges[edge] + ',' + value
+                       else:
+                          labels_edges[edge] = value
+                       G.add_edge('H', term)
                     #если терминальный символ
-                    else:
+                   else:
                         #метка для такого ребра не нужна
-                        G.add_edge(value, term)
-                else:
+                       G.add_edge(value, term)
+                   #G.add_edge(value, term)
+                elif len(value) == 2:
                     edge = (value[0], term)
-                    labels_edges[edge] = value[1]
+                    if labels_edges.get(edge) != None:
+                        labels_edges[edge] = labels_edges[edge] +','+ value[1]
+                    else:
+                        labels_edges[edge] = value[1]
                     G.add_edge(value[0], term)
         print(labels_edges)
-    #    nx.draw_networkx_edge_labels(G,pos,edge_labels=labels_edges)
-        nx.draw(G, with_labels=True, connectionstyle='arc3, rad = 0.1')
+
+        plt.figure()
+        nx.draw_networkx_edge_labels(G, loc, edge_labels=labels_edges, font_color="red")
+       # nx.draw(G, with_labels=True, connectionstyle='arc3, rad = 0.1')
+        nx.draw(G, with_labels=True)
+        #plt.axis('off')
+        plt.show()
+
+
+class graph:
+    def DrawGraph(self):
+
+        edges = [['A', 'B'], ['B', 'C'], ['B', 'D']]
+        G = nx.DiGraph()
+        G.add_edges_from(edges)
+        pos = nx.spring_layout(G)
+        plt.figure()
+        nx.draw(
+            G, pos, edge_color='black', width=1, linewidths=1,
+            node_size=500, node_color='pink', alpha=0.9,
+            labels={node: node for node in G.nodes()}
+        )
+        nx.draw_networkx_edge_labels(
+            G, pos,
+            edge_labels={('A', 'B'): 'AB',
+                         ('B', 'C'): 'BC',
+                         ('B', 'D'): 'BD'},
+            font_color='red'
+        )
         plt.axis('off')
         plt.show()
 
