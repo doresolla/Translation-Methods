@@ -1,6 +1,6 @@
 G({A,B,C,S};{a,b};P;S)
 P:
 S-->C
-C-->Ab|Ba
+C-->Ab|Ba|
 A-->a|Ca|Cb|Aa
 B-->b|Cb

@@ -12,8 +12,10 @@ class translator:
     VN, VT = [], []
     target_symbol = 's'
     endings = []
+    EPS = chr(1)
 
     def Read(self, filename):
+        print(self.EPS)
         f = open(filename)
         lines = f.readlines()
         index1 = lines[0].find('{')
@@ -35,6 +37,8 @@ class translator:
             term = lines[i][:lines[i].find('-')]
             if '|' in lines[i]:
                 self.Rules[term] = lines[i][lines[i].find('-->') + 3:].split('|')
+                if lines[i].endswith('|'):
+                    self.Rules[term].append(self.EPS)
             else:
                 self.Rules[term] = lines[i][lines[i].find('-->') + 3]
             try:
@@ -55,6 +59,8 @@ class translator:
                 break
             if output[index] in self.VT:
                 replacement = random.choice(self.Rules[output[index]])
+                if replacement == self.EPS:
+                    replacement = ''
                 output = output.replace(output[index], replacement, 1)
                 print(' -->', output, end='')
                 iterations += 1
@@ -119,22 +125,35 @@ class translator:
         else:
             raise ValueError('Нет такого значения')
 
+    #Варианты на что можно свернуть нулевой, первый или первые 2 символа
     def GetListOfKeys(self, value):
         vars = []
         for key in translator.Rules.keys():
             if value[0] in translator.Rules[key] or value[:2] in translator.Rules[key]:
                 vars.append(key)
-            elif ' ' in translator.Rules[key]:
+            elif translator.EPS in translator.Rules[key]:
                 vars.append(key)
         return vars
 
+    #свёртка по заданному варианту
     def fold(self, word, replace=None):
+        result = ''
         if replace != None:
             begin = translator.Rules[replace]
             for val in begin:
                 if word.startswith(val):
-                    word = replace + word[len(val):]
+                    result = replace + word[len(val):]
+                    break
+                elif val == translator.EPS:
+                    result = replace + word
+                    break
+            total = 0
+            for term in self.VT:
+                total += result.count(term)
+                if total > 1:
                     return word
+            else:
+                return result
         else:
             if word[:2] in translator.endings:
                 word = translator.GetKeyByValue(word[:2]) + word[2:]
@@ -232,3 +251,30 @@ class translator:
             edge.attr['label'] = str(labels_edges[pair]) + "  "
 
         A.draw('диаграмма состояний (петля).png')
+
+class TreeNode:
+    def __init__(self, data):
+        self.data = data
+        self.children = []
+    def dfs(self, node, level = 0):
+        indent = " " * level * 4
+        print(indent + str(node.data))
+        for child in node.children:
+            self.dfs(self, child, level + 1)
+
+
+    def build_family_tree(self, data):
+        root = TreeNode(data)
+        vars = translator.GetListOfKeys(translator,data)
+        for var in vars:
+            newword = translator.fold(translator, data, var)
+            if newword[0] == 'S' and len(newword) > 1:
+                return
+            else:
+                child = self.build_family_tree(self, newword)
+            root.children.append(child)
+            #self.build_family_tree(newword)
+
+        return root
+
+
