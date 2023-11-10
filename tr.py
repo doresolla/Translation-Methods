@@ -1,7 +1,7 @@
 import random
 import matplotlib.pyplot as plt
 import networkx as nx
-import pygraphviz as pgv
+# import pygraphviz as pgv
 from networkx.drawing.nx_agraph import to_agraph
 import my_networkx as my_nx
 from anytree import Node, RenderTree
@@ -79,8 +79,8 @@ class translator:
         else:
             print(f"Операция свёртки: \n {word}", end="")
             try:
-                p = self.GetParentAndChidren(word)
-                print(RenderTree(p))
+                # p = self.GetParentAndChidren(word)
+                # print(RenderTree(p))
                 word = self.fold(self, word)
                 print(f" <-- {word}", end="")
             except:
@@ -102,21 +102,21 @@ class translator:
                 print("\nЦепочка не принадлежит грамматике")
                 return False
 
-    def GetParentAndChidren(self, word):
-        parent_node = Node(word)
-        vars = self.GetListOfKeys(self, word)
-        if vars == []:
-            return None
-        elif len(vars) >= 1:
-            for i in range(len(vars)):
-                # варианты (дети текущего узла)
-                word = self.fold(self, word, vars[i])
-                word = vars[i] + word[len(vars[i]):]
-                Node(word, parent=parent_node)
-                while 'S' not in parent_node.leaves:
-                    self.GetParentAndChidren(self, word)
-        #  print(RenderTree(parent_node))
-        return parent_node
+    # def GetParentAndChidren(self, word):
+    #     parent_node = Node(word)
+    #     vars = self.GetListOfKeys(self, word)
+    #     if vars == []:
+    #         return None
+    #     elif len(vars) >= 1:
+    #         for i in range(len(vars)):
+    #             # варианты (дети текущего узла)
+    #             word = self.fold(self, word, vars[i])
+    #             word = vars[i] + word[len(vars[i]):]
+    #             Node(word, parent=parent_node)
+    #             while 'S' not in parent_node.leaves:
+    #                 self.GetParentAndChidren(self, word)
+    #     #  print(RenderTree(parent_node))
+    #     return parent_node
 
     def GetKeyByValue(value):
         for key in translator.Rules.keys():
@@ -125,17 +125,17 @@ class translator:
         else:
             raise ValueError('Нет такого значения')
 
-    #Варианты на что можно свернуть нулевой, первый или первые 2 символа
+    # Варианты на что можно свернуть нулевой, первый или первые 2 символа
     def GetListOfKeys(self, value):
         vars = []
         for key in translator.Rules.keys():
             if value[0] in translator.Rules[key] or value[:2] in translator.Rules[key]:
                 vars.append(key)
-            elif translator.EPS in translator.Rules[key]:
+            elif translator.EPS in translator.Rules[key] and value[0] in self.VN:
                 vars.append(key)
         return vars
 
-    #свёртка по заданному варианту
+    # свёртка по заданному варианту
     def fold(self, word, replace=None):
         result = ''
         if replace != None:
@@ -144,7 +144,7 @@ class translator:
                 if word.startswith(val):
                     result = replace + word[len(val):]
                     break
-                elif val == translator.EPS:
+                elif val == translator.EPS and word[0] in self.VN:
                     result = replace + word
                     break
             total = 0
@@ -194,7 +194,7 @@ class translator:
 
         for edge in G.edges():
             if edge[0] == edge[1]:
-                self.LoopGraph(self,G.edges(), labels_edges)
+                self.LoopGraph(self, G.edges(), labels_edges)
                 return
         curved_edges = [edge for edge in G.edges() if edge[::-1] in G.edges() and edge[::-1] != edge]
         straight_edges = list(set(G.edges() - set(curved_edges)))
@@ -235,14 +235,14 @@ class translator:
             else:
                 G.add_edge(edge[0], edge[1])
 
-        #print(G.edges(data=True))
+        # print(G.edges(data=True))
         G.graph['edge'] = {'arrowsize': '0.6', 'splines': 'curved'}
         G.graph['graph'] = {'scale': '3'}
 
         A = to_agraph(G)
 
         A.graph_attr['strict'] = True
-        A.graph_attr['rankdir']='LR'
+        A.graph_attr['rankdir'] = 'LR'
         A.layout('dot')
 
         # set edge labels
@@ -252,29 +252,52 @@ class translator:
 
         A.draw('диаграмма состояний (петля).png')
 
+
 class TreeNode:
+    IsIn = False
+    path = []
     def __init__(self, data):
         self.data = data
         self.children = []
-    def dfs(self, node, level = 0):
+
+    def build_family_tree(self, data):
+        root = TreeNode(data)
+        vars = translator.GetListOfKeys(translator, data)
+        if vars is None:
+            return
+        for var in vars:
+            newword = translator.fold(translator, data, var)
+            if newword == 'S':
+                self.IsIn = True
+            child = self.build_family_tree(self, newword)
+            root.children.append(child)
+            # self.build_family_tree(newword)
+
+        return root
+
+    def dfs(self, node, level=0):
         indent = " " * level * 4
         print(indent + str(node.data))
         for child in node.children:
             self.dfs(self, child, level + 1)
 
 
-    def build_family_tree(self, data):
-        root = TreeNode(data)
-        vars = translator.GetListOfKeys(translator,data)
-        for var in vars:
-            newword = translator.fold(translator, data, var)
-            if newword[0] == 'S' and len(newword) > 1:
-                return
-            else:
-                child = self.build_family_tree(self, newword)
-            root.children.append(child)
-            #self.build_family_tree(newword)
+    def pathToS(self, node):
+        path = []
 
-        return root
+
+        return
+
+    def findS(self, node):
+        if node.children != []:
+            for child in node.children:
+                yield from ([node.data] + arr for arr in self.findS(self, child))
+        #если лист дерева
+        else:
+            if node.data == 'S':
+                yield [node.data]
+
+
+
 
 
