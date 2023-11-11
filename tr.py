@@ -15,7 +15,6 @@ class translator:
     EPS = chr(1)
 
     def Read(self, filename):
-        print(self.EPS)
         f = open(filename)
         lines = f.readlines()
         index1 = lines[0].find('{')
@@ -29,7 +28,6 @@ class translator:
         print('VT :', self.VT)
         print('VN :', self.VN)
         print('Целевой символ :', self.target_symbol)
-        print('len(lines) = ', len(lines))
         for i in range(2, len(lines)):
             lines[i] = lines[i].strip('\n')
             if lines[i] == "P:":
@@ -73,50 +71,18 @@ class translator:
         return output
 
     def IsIn(self, word):
-        if word == "":
-            print("word is null")
-            return False
+        family_tree = TreeNode.build_family_tree(TreeNode, word)
+        # вывод дерева
+        TreeNode.dfs(TreeNode, family_tree)
+        paths = list(TreeNode.findS(TreeNode, family_tree))
+        if len(paths) > 0:
+            print(*paths, sep='\n')
+            print('Цепочка принадлежит грамматике')
         else:
-            print(f"Операция свёртки: \n {word}", end="")
-            try:
-                # p = self.GetParentAndChidren(word)
-                # print(RenderTree(p))
-                word = self.fold(self, word)
-                print(f" <-- {word}", end="")
-            except:
-                print("\nЦепочка не принадлежит грамматике")
-                return False
-            while any(elem in word for elem in self.VN):
-                for index in range(len(word)):
-                    # if self.endings.count(word[0]) > 1 or
-                    try:
-                        word = self.fold(self, word)
-                    except:
-                        print("\nЦепочка не принадлежит грамматике")
-                        return False
-                    print(f" <-- {word}", end='')
-                    if (word == self.target_symbol):
-                        print("\nЦепочка принадлежит грамматике")
-                        return True
-            else:
-                print("\nЦепочка не принадлежит грамматике")
-                return False
+            print("Цепочка не принадлежит грамматике")
 
-    # def GetParentAndChidren(self, word):
-    #     parent_node = Node(word)
-    #     vars = self.GetListOfKeys(self, word)
-    #     if vars == []:
-    #         return None
-    #     elif len(vars) >= 1:
-    #         for i in range(len(vars)):
-    #             # варианты (дети текущего узла)
-    #             word = self.fold(self, word, vars[i])
-    #             word = vars[i] + word[len(vars[i]):]
-    #             Node(word, parent=parent_node)
-    #             while 'S' not in parent_node.leaves:
-    #                 self.GetParentAndChidren(self, word)
-    #     #  print(RenderTree(parent_node))
-    #     return parent_node
+
+
 
     def GetKeyByValue(value):
         for key in translator.Rules.keys():
@@ -128,11 +94,16 @@ class translator:
     # Варианты на что можно свернуть нулевой, первый или первые 2 символа
     def GetListOfKeys(self, value):
         vars = []
+
         for key in translator.Rules.keys():
-            if value[0] in translator.Rules[key] or value[:2] in translator.Rules[key]:
-                vars.append(key)
-            elif translator.EPS in translator.Rules[key] and value[0] in self.VN:
-                vars.append(key)
+            if value != '':
+                if value[0] in translator.Rules[key] or value[:2] in translator.Rules[key]:
+                    vars.append(key)
+                if translator.EPS in translator.Rules[key] and value[0] in self.VN:
+                    vars.append(key)
+            else:
+                if translator.EPS in translator.Rules[key]:
+                    vars.append(key)
         return vars
 
     # свёртка по заданному варианту
