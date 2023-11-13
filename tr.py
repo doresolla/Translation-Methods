@@ -226,7 +226,6 @@ class translator:
 
 class TreeNode:
     IsIn = False
-    path = []
     def __init__(self, data):
         self.data = data
         self.children = []
@@ -252,13 +251,6 @@ class TreeNode:
         for child in node.children:
             self.dfs(self, child, level + 1)
 
-
-    def pathToS(self, node):
-        path = []
-
-
-        return
-
     def findS(self, node):
         if node.children != []:
             for child in node.children:
@@ -267,8 +259,3 @@ class TreeNode:
         else:
             if node.data == 'S':
                 yield [node.data]
-
-
-
-
-
